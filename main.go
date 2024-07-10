@@ -23,9 +23,9 @@ func healthCheckHandler(responseWriter http.ResponseWriter, request *http.Reques
 }
 
 func (cfg *apiConfig) numOfRequestsHandler(w http.ResponseWriter, request *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(200)
-	w.Write([]byte(fmt.Sprintf("Hits: %v", cfg.fileserverHits)))
+	w.Write([]byte(fmt.Sprintf("<html><body><h1>Welcome, Chirpy Admin</h1><p>Chirpy has been visited %d times!</p></body></html>", cfg.fileserverHits)))
 }
 
 func (cfg * apiConfig) resetRequestCountHandler(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +50,7 @@ func main() {
 	mux.Handle("/app/", config.middlewareMetricsInc(fileServer))
 	
 	// Handle the metrics endpoint
-	mux.HandleFunc("GET /api/metrics", config.numOfRequestsHandler)
+	mux.HandleFunc("GET /admin/metrics", config.numOfRequestsHandler)
 
 	// Handle the reset endpoint
 	mux.HandleFunc("/api/reset", config.resetRequestCountHandler)
