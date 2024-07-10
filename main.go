@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 type apiConfig struct {
@@ -36,39 +37,49 @@ func (cfg * apiConfig) resetRequestCountHandler(w http.ResponseWriter, r *http.R
 	w.Write([]byte("Reset"))
 }
 
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) error {
+	response, err:= json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.WriteHeader(code)
+    w.Write(response)
+    return nil
+}
+
+func respondWithError(w http.ResponseWriter, code int, msg string) error{
+	return respondWithJSON(w, code, map[string]string{"error": msg})
+}
+
 func validateChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
 	}
 
-	type errorResponse struct {
-		Error string `json:"error"`
+	type validResponse struct {
+		Cleaned_Body string `json:"cleaned_body"`
 	}
 
-	type validResponse struct {
-		Valid bool `json:"valid"`
-	}
 	w.Header().Set("Content-Type", "application/json")
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		w.WriteHeader(400)
-		dat, _ := json.Marshal(errorResponse{Error: "something went wrong"})
-		w.Write(dat)
+		respondWithError(w, 400, "something went wrong")
 		return
 	}
 
 	if len(params.Body) > 140 {
-		w.WriteHeader(400)
-		dat, _ := json.Marshal(errorResponse{Error: "Chirp is too long"})
-		w.Write(dat)
+		respondWithError(w, 400, "Chirp is too long")
 		return
 	}
 
-	w.WriteHeader(200)
-	dat, _ := json.Marshal(validResponse{Valid: true})
-	w.Write(dat)
+	filteredText := replaceBadWords(params.Body)
+
+	respondWithJSON(w, 200, validResponse{Cleaned_Body: filteredText})
 }
 
 
@@ -77,13 +88,10 @@ func main() {
 	fileServer := http.FileServer(http.Dir("."))
 	fileServer = http.StripPrefix("/app", fileServer)
 
-	
-
 	config := apiConfig{
 		 fileserverHits: 0,
 	}
 
-	
 	// Handle the main app route with the middleware
 	mux.Handle("/app/", config.middlewareMetricsInc(fileServer))
 	
@@ -99,12 +107,25 @@ func main() {
 	// Validate Chirp
 	mux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
 
-
 	server := &http.Server{
 		Addr: "localhost:8080",
 		Handler: mux,
 	}
-
-
+	
 	server.ListenAndServe()
+}
+
+
+
+func replaceBadWords(s string) string {
+	strArr := strings.Split(s, " ")
+
+	for i, word := range strArr {
+		wordLowered := strings.ToLower(word)
+		if wordLowered == "kerfuffle" || wordLowered == "sharbert" || wordLowered == "fornax" {
+			strArr[i] = "****"
+		}
+	}
+
+	return strings.Join(strArr, " ")
 }
