@@ -11,13 +11,12 @@ type apiConfig struct {
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		
 		cfg.fileserverHits += 1
 		next.ServeHTTP(w, r)
 	})
 }
 
-func myHandler(responseWriter http.ResponseWriter, request *http.Request) {
+func healthCheckHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	responseWriter.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	responseWriter.WriteHeader(200)
 	responseWriter.Write([]byte("OK"))
@@ -57,7 +56,7 @@ func main() {
 	mux.HandleFunc("/reset", config.resetRequestCountHandler)
 	
 	// Handle health check
-	mux.HandleFunc("/healthz", myHandler)
+	mux.HandleFunc("/healthz", healthCheckHandler)
 
 
 	server := &http.Server{
