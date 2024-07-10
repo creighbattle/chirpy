@@ -50,13 +50,13 @@ func main() {
 	mux.Handle("/app/", config.middlewareMetricsInc(fileServer))
 	
 	// Handle the metrics endpoint
-	mux.HandleFunc("/metrics", config.numOfRequestsHandler)
+	mux.HandleFunc("GET /api/metrics", config.numOfRequestsHandler)
 
 	// Handle the reset endpoint
-	mux.HandleFunc("/reset", config.resetRequestCountHandler)
+	mux.HandleFunc("/api/reset", config.resetRequestCountHandler)
 	
 	// Handle health check
-	mux.HandleFunc("/healthz", healthCheckHandler)
+	mux.HandleFunc("GET /api/healthz", healthCheckHandler)
 
 
 	server := &http.Server{
