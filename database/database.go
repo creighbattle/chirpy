@@ -78,6 +78,42 @@ func (db *DB) CreateUser(body string, password string) (UserResponse, error) {
 	return UserResponse{Email: body, ID: id}, nil
 }
 
+func (db *DB) UpdateUser(updatedEmail string, password string, id int) (UserResponse, error) {
+	dbStructure, err := db.LoadDB()
+	if err != nil {
+		return UserResponse{}, err
+	}
+
+	bcryptPassword, err := bcrypt.GenerateFromPassword([]byte(password), 0)
+	if err != nil {
+		return UserResponse{}, err
+	}
+
+	allEmails := dbStructure.Emails
+	user := dbStructure.Users[id]
+
+	_, ok := allEmails[updatedEmail]
+	if ok {
+		return UserResponse{}, errors.New("email already exists")
+	}
+
+	delete(allEmails, user.Email)
+	allEmails[updatedEmail] = user.ID
+
+	user.Email = updatedEmail
+	user.Password = string(bcryptPassword)
+
+	dbStructure.Users[id] = user
+	dbStructure.Emails = allEmails
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return UserResponse{}, err
+	}
+
+	return UserResponse{Email: updatedEmail, ID: id}, nil
+}
+
 func (db *DB) GetUsers() ([]User, error) {
 	dbStructure, err := db.LoadDB()
 	if err != nil {
