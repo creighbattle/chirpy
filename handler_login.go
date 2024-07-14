@@ -1,8 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,6 +24,7 @@ func (cfg *apiConfig) handlerLogin (w http.ResponseWriter, r *http.Request) {
 		Email string `json:"email"`
 		ID int `json:"id"`
 		Token string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -49,7 +51,6 @@ func (cfg *apiConfig) handlerLogin (w http.ResponseWriter, r *http.Request) {
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(params.Password))
 	if err != nil {
-		fmt.Println(user.Password)
 		respondWithError(w, http.StatusUnauthorized, "Passwords do not match")
 		return
 	}
@@ -59,8 +60,8 @@ func (cfg *apiConfig) handlerLogin (w http.ResponseWriter, r *http.Request) {
 
 	expireTime := params.ExpiresInSeconds
 
-	if expireTime == 0 || expireTime > 86400 {
-		expireTime = 86400
+	if expireTime == 0 || expireTime > 3600 {
+		expireTime = 3600
 	}
 
 	
@@ -80,8 +81,25 @@ func (cfg *apiConfig) handlerLogin (w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	c := 32
+	b := make([]byte, c)
+	_, err = rand.Read(b)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	futureTime := currentTime.Add(time.Duration(1440) * time.Hour)
+	futureTimeString := futureTime.Format(time.RFC3339)
+
+	err = cfg.DB.UpdateRefreshToken(id, hex.EncodeToString(b), futureTimeString)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
 	
-	respondWithJSON(w, http.StatusOK, response{Email: user.Email, ID: id, Token: signedJwtToken})
+	respondWithJSON(w, http.StatusOK, response{Email: user.Email, ID: id, Token: signedJwtToken, RefreshToken: hex.EncodeToString(b)})
 
 	
 

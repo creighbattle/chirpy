@@ -24,12 +24,15 @@ type User struct {
 	ID int `json:"id"`
 	Email string `json:"email"`
 	Password string `json:"password"`
+	RefreshToken string `json:"refresh_token"`
+	Exp string `json:"exp"`
 }
 
 type UserResponse struct {
 	ID int `json:"id"`
 	Email string `json:"email"`
 }
+
 
 type Chirp struct {
 	ID   int    `json:"id"`
@@ -113,6 +116,52 @@ func (db *DB) UpdateUser(updatedEmail string, password string, id int) (UserResp
 
 	return UserResponse{Email: updatedEmail, ID: id}, nil
 }
+
+func (db *DB) UpdateRefreshToken (id int, token string, exp string) error {
+	dbStructure, err := db.LoadDB()
+	if err != nil {
+		return err
+	}
+
+	user := dbStructure.Users[id]
+	user.RefreshToken = token
+	user.Exp = exp
+
+	dbStructure.Users[id] = user
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (db *DB) RevokeRefreshToken (refreshToken string) error {
+	dbStructure, err := db.LoadDB()
+	if err != nil {
+		return err
+	}
+
+	users := dbStructure.Users
+
+	for _, user := range users {
+		if user.RefreshToken == refreshToken {	
+			user.RefreshToken = ""
+			dbStructure.Users[user.ID] = user
+			err = db.writeDB(dbStructure)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return errors.New("refresh token does not exist")
+
+}
+
 
 func (db *DB) GetUsers() ([]User, error) {
 	dbStructure, err := db.LoadDB()

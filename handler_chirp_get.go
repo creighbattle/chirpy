@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -20,10 +19,7 @@ func (cfg *apiConfig) handlerChripRetrieve(w http.ResponseWriter, r *http.Reques
 
 	val, ok := dbChrips.Chirps[pathValueInt]
 
-	fmt.Println(val)
-	fmt.Println(ok)
-	fmt.Println(dbChrips.Chirps[3])
-	fmt.Println(pathValue)
+	
 
 	if !ok {
 		respondWithError(w, http.StatusNotFound, "The Chirp does not exist")
