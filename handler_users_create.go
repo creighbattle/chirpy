@@ -5,11 +5,7 @@ import (
 	"net/http"
 )
 
-type User struct {
-	ID int `json:"id"`
-	Email string `json:"email"`
-	Password string `json:"password"`
-}
+
 
 func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
@@ -26,6 +22,7 @@ func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request)
 	}
 
 	user, err := cfg.DB.CreateUser(params.Email, params.Password)
+	
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return

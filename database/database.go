@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 
@@ -26,11 +27,13 @@ type User struct {
 	Password string `json:"password"`
 	RefreshToken string `json:"refresh_token"`
 	Exp string `json:"exp"`
+	IsChirpyRed bool `json:"is_chirpy_red"`
 }
 
 type UserResponse struct {
 	ID int `json:"id"`
 	Email string `json:"email"`
+	IsChirpyRed bool `json:"is_chirpy_red"`
 }
 
 
@@ -79,7 +82,7 @@ func (db *DB) CreateUser(body string, password string) (UserResponse, error) {
 		return UserResponse{}, err
 	}
 
-	return UserResponse{Email: body, ID: id}, nil
+	return UserResponse{Email: body, ID: id, IsChirpyRed: false}, nil
 }
 
 func (db *DB) UpdateUser(updatedEmail string, password string, id int) (UserResponse, error) {
@@ -116,6 +119,34 @@ func (db *DB) UpdateUser(updatedEmail string, password string, id int) (UserResp
 	}
 
 	return UserResponse{Email: updatedEmail, ID: id}, nil
+}
+
+
+func (db *DB) UpdateUserSubscription(userId int) error {
+
+	dbStructure, err := db.LoadDB()
+	if err != nil {
+		return err
+	}
+
+	users := dbStructure.Users
+	user, ok := users[userId]
+	if !ok {
+		return errors.New("no user")
+	}
+
+	user.IsChirpyRed = true
+	dbStructure.Users[userId] = user
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		fmt.Println("running here")
+		fmt.Println(err)
+		return err
+	}
+
+	return nil
+
 }
 
 func (db *DB) UpdateRefreshToken (id int, token string, exp string) error {
