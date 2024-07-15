@@ -7,6 +7,18 @@ import (
 
 func (cfg *apiConfig) handlerPolkaWebhook(w http.ResponseWriter, r *http.Request) {
 
+	apiKey := r.Header.Get("Authorization")
+	if len(apiKey) < 8 {
+		respondWithError(w, http.StatusUnauthorized, "api key required")
+		return
+	}
+	apiKey = apiKey[7:]
+
+	if apiKey != cfg.polkaKey {
+		respondWithError(w, http.StatusUnauthorized, "invalid api key")
+		return
+	}
+
 	type parameters struct {
 		Event string `json:"event"`
 		Data struct {

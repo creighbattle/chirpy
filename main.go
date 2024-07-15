@@ -13,12 +13,14 @@ type apiConfig struct {
 	fileserverHits int
 	DB *database.DB
 	jwtSecret []byte
+	polkaKey string
 }
 
 
 func main() {
 	godotenv.Load()
 	jwtSecret := os.Getenv("JWT_SECRET")
+	polkaKey := os.Getenv("POLKA_KEY")
 	const filepathRoot = "."
 	const port = "8080"
 
@@ -31,6 +33,7 @@ func main() {
 		fileserverHits: 0,
 		DB: db,
 		jwtSecret: []byte(jwtSecret),
+		polkaKey: polkaKey,
 	}
 
 	mux := http.NewServeMux()
