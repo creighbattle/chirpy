@@ -13,10 +13,12 @@ func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, r *http.Reque
 	}
 
 	chirps := []Chirp{}
+		
 	for _, dbChirp := range dbChirps {
 		chirps = append(chirps, Chirp{
 			ID:   dbChirp.ID,
 			Body: dbChirp.Body,
+			AuthorID: dbChirp.AuthorID,
 		})
 	}
 

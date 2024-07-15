@@ -37,6 +37,7 @@ type UserResponse struct {
 type Chirp struct {
 	ID   int    `json:"id"`
 	Body string `json:"body"`
+	AuthorID int `json:"author_id"`
 }
 
 func NewDB(path string) (*DB, error) {
@@ -177,7 +178,7 @@ func (db *DB) GetUsers() ([]User, error) {
 	return users, nil
 }
 
-func (db *DB) CreateChirp(body string) (Chirp, error) {
+func (db *DB) CreateChirp(body string, authorID int) (Chirp, error) {
 	dbStructure, err := db.LoadDB()
 	if err != nil {
 		return Chirp{}, err
@@ -187,6 +188,7 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 	chirp := Chirp{
 		ID:   id,
 		Body: body,
+		AuthorID: authorID,
 	}
 	dbStructure.Chirps[id] = chirp
 
@@ -197,6 +199,33 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 
 	return chirp, nil
 }
+
+func (db *DB) DeleteChirp(id int, chirpId int) error{
+	dbStructure, err := db.LoadDB()
+	if err != nil {
+		return err
+	}
+
+	chirps := dbStructure.Chirps
+
+	for _, chirp := range chirps {
+		if chirpId == chirp.ID {
+			if chirp.AuthorID != id {
+				return errors.New("404")
+			}
+			delete(chirps, chirpId)
+			dbStructure.Chirps = chirps
+			err = db.writeDB(dbStructure)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+
+	return nil
+} 
 
 func (db *DB) GetChirps() ([]Chirp, error) {
 	dbStructure, err := db.LoadDB()
